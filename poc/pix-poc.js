@@ -9,6 +9,8 @@ const apiStaging = 'https://api-pix-h.gerencianet.com.br'
 
 const baseUrl = process.env.GN_ENV === 'producao' ? apiProduction : apiStaging
 
+console.log(baseUrl)
+
 const getToken = async () => {
 	const certif = fs.readFileSync('../' + process.env.GN_CERTIFICADO)
 
@@ -67,9 +69,32 @@ const createCharge = async (accessToken, chargeData) => {
 	return result.data
 }
 
+const getLoc = async (accessToken, locId) => {
+	const certif = fs.readFileSync('../' + process.env.GN_CERTIFICADO)
+
+	const agent = new https.Agent({
+		pfx: certif,
+		passphrase: '',
+	})
+
+	const config = {
+		method: 'GET',
+		url: baseUrl + '/v2/loc/' + locId + '/qrcode',
+		headers: {
+			Authorization: 'Bearer ' + accessToken,
+			'Content-type': 'application/json',
+		},
+		httpsAgent: agent,
+	}
+
+	const result = await axios(config)
+	return result.data
+}
+
 const run = async () => {
 	const token = await getToken()
 	const accessToken = token.access_token
+	const chave = process.env.CHAVE_PIX
 
 	const chargeData = {
 		calendario: {
@@ -82,12 +107,13 @@ const run = async () => {
 		valor: {
 			original: '1.50',
 		},
-		chave: 'aaa', //chave do app gerencianet
+		chave, //chave do app gerencianet
 		solicitacaoPagador: 'cobrança teste TrufaShop',
 	}
 
 	const charge = await createCharge(accessToken, chargeData)
-	console.log(charge)
+	const qrCode = await getLoc(accessToken, charge.loc.id)
+	console.log(qrCode)
 }
 
 run()
