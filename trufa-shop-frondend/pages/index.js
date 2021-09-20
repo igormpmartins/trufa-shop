@@ -6,7 +6,7 @@ const Index = (props) => {
 	return (
 		<div className='container mx-auto h-screen bg-gray-100'>
 			<h2>Teste Trufa-Shop</h2>
-			<main className='flex flex-row flex-wrap space-y-2 space-x-2'>
+			<main className='flex flex-row flex-wrap space-x-2'>
 				{products.map((product) => {
 					return (
 						<section className='flex flex-col md:flex-row py-10 px-5 bg-white rounded-md shadow-lg w-1/3'>
