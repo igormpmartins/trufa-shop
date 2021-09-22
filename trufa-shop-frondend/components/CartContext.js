@@ -35,8 +35,56 @@ export const CartProvider = ({ children }) => {
 		})
 	}
 
+	const removeFromCart = (key) => {
+		setCart((old) => {
+			/*exemplo da aula:
+			const newCart = {}
+			Object.keys(old).forEach(id => {
+				if (id !== key ) {
+					newCart[id] = old[id]
+				}
+			})
+			return newCart
+			*/
+
+			delete old[key]
+			const newCart = {
+				...old,
+			}
+			window.localStorage.setItem('cart', JSON.stringify(newCart))
+			return newCart
+		})
+	}
+
+	const changeItemQty = (key, newQty) => {
+		setCart((old) => {
+			/*exemplo da aula:
+			const newCart = {}
+			Object.keys(old).forEach(id => {
+				const newProduct = {...old[id]}
+
+				if (id === key ) {
+					newProduct.qty = newQty
+				}
+				newCart[id] = newProduct
+			})
+			return newCart
+			*/
+
+			old[key].qty = newQty
+
+			const newCart = {
+				...old,
+			}
+			window.localStorage.setItem('cart', JSON.stringify(newCart))
+			return newCart
+		})
+	}
+
 	return (
-		<CartContext.Provider value={{ cart, addCart }}>
+		<CartContext.Provider
+			value={{ cart, addCart, removeFromCart, changeItemQty }}
+		>
 			{children}
 		</CartContext.Provider>
 	)
