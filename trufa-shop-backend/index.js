@@ -1,33 +1,23 @@
 require('dotenv').config({ path: '../.env.homologacao' })
-console.log('Loading server, ambiente da api', process.env.GN_ENV)
+console.log('Loading https server')
+console.log('Ambiente da api', process.env.GN_ENV)
 
-const express = require('express')
-const cors = require('cors')
-const { saveOrder } = require('./lib/spreadsheet')
-const { createPixCharge } = require('./lib/pix')
+const https = require('https')
+const fs = require('fs')
+const app = require('./app')
 
-const app = express()
-app.use(cors())
-app.use(express.json())
+const options = {
+	//tls
+	key: fs.readFileSync(process.env.KEY_PATH),
+	cert: fs.readFileSync(process.env.CERT_PATH),
 
-app.get('/', (req, res) => {
-	res.send({
-		ok: true,
-	})
-})
+	//mtls
+	ca: fs.readFileSync(process.env.GN_CA),
+	minVersion: 'TLSv1.2',
+	requestCert: true,
+	rejectUnauthorized: false,
+}
 
-app.post('/create-order', async (req, res) => {
-	const pixCharge = await createPixCharge()
-	const { qrcode, cobranca } = pixCharge
-	const order = { ...req.body, id: cobranca.txid }
-	await saveOrder(order)
-	res.send({ ok: 1, qrcode, cobranca })
-})
-
-app.listen(3001, (err) => {
-	if (err) {
-		console.log('TrufaShop - Error loading server', err)
-	} else {
-		console.log('TrufaShop - Server online')
-	}
-})
+//online, https
+const server = https.createServer(options, app)
+server.listen(443)

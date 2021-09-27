@@ -4,3 +4,4 @@ node_modules
 .env.producao
 .next
 credentials.json
+*.crt
