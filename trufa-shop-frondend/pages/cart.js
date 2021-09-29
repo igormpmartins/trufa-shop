@@ -4,12 +4,14 @@ import Head from 'next/head'
 import { useCart } from '../components/CartContext'
 import { useFormik } from 'formik'
 import axios from 'axios'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const CartList = () => {
-	//pre-order, ordering, order-received
+	//pre-order, ordering, order-received, order-paid
 	const [orderStatus, setOrderStatus] = useState('pre-order')
 	const [qrCode, setQrCode] = useState('')
+	const [checkOrder, setCheckOrder] = useState(false)
+	const [orderId, setOrderId] = useState()
 
 	const cart = useCart()
 	const cartItems = Object.keys(cart.cart)
@@ -49,10 +51,29 @@ const CartList = () => {
 			const res = await axios.post(url, order)
 			setOrderStatus('order-received')
 			setQrCode(res.data.qrcode.imagemQrcode)
+			setOrderId(res.data.orderId)
+			cart.clearCart()
+			console.log('limpou cart, ativando check order')
+			setCheckOrder(true)
 
 			console.log(res.data)
 		},
 	})
+
+	useEffect(async () => {
+		if (checkOrder) {
+			const timer = setInterval(async () => {
+				const url = process.env.NEXT_PUBLIC_API_URL + 'check-order'
+				const res = await axios.post(url, { orderId })
+
+				if (res.data.pago) {
+					console.log('pagou')
+					clearInterval(timer)
+					setOrderStatus('order-paid')
+				}
+			}, 2000)
+		}
+	}, [checkOrder])
 
 	const removeItem = (key) => () => {
 		cart.removeFromCart(key)
@@ -220,6 +241,17 @@ const CartList = () => {
 												para concluir seu pedido.
 											</p>
 											<img src={qrCode}></img>
+										</div>
+									)}
+									{orderStatus === 'order-paid' && (
+										<div>
+											<p className='font-bold text-l text-black uppercase'>
+												Número do Pedido: {orderId}
+											</p>
+											<p className='mt-4'>
+												Pedido pago com sucesso! Aguarde contato da TrufaShop
+												para a entrega. Muito obrigado pela preferência.
+											</p>
 										</div>
 									)}
 								</div>

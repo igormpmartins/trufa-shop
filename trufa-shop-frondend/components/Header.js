@@ -25,12 +25,11 @@ const Header = () => {
 
 					<div className='md:flex items-center'>
 						<div className='flex flex-col mt-2 md:flex-row md:mt-0 md:mx-1'>
-							<a
-								className='my-1 text-sm text-gray-700 leading-5 hover:text-blue-600 hover:underline md:mx-4 md:my-0'
-								href='#'
-							>
-								Home
-							</a>
+							<Link href='/'>
+								<a className='my-1 text-sm text-gray-700 leading-5 hover:text-blue-600 hover:underline md:mx-4 md:my-0'>
+									Home
+								</a>
+							</Link>
 							<a
 								className='my-1 text-sm text-gray-700 leading-5 hover:text-blue-600 hover:underline md:mx-4 md:my-0'
 								href='#'

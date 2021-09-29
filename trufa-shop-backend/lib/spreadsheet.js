@@ -64,8 +64,36 @@ const updateOrder = async (orderId, status) => {
 	}
 }
 
+const checkOrder = async (orderId) => {
+	await doc.useServiceAccountAuth(credentials)
+	await doc.loadInfo()
+
+	const sheet = await doc.sheetsByIndex[1]
+	const rows = await sheet.getRows()
+
+	let currentStatus = ''
+
+	for await (const row of rows) {
+		if (!row.Pedido) {
+			break
+		}
+
+		if (row.Pedido === orderId.toString()) {
+			currentStatus = row.Status
+			break
+		}
+	}
+
+	return {
+		orderId,
+		status: currentStatus,
+		pago: currentStatus === orderStatus.PAGO_PIX,
+	}
+}
+
 module.exports = {
 	saveOrder,
 	updateOrder,
+	checkOrder,
 	orderStatus,
 }
