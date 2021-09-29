@@ -106,10 +106,10 @@ const createPixCharge = async () => {
 			nome: 'Igor Martins',
 		},
 		valor: {
-			original: '0.12',
+			original: '0.08',
 		},
 		chave, //chave do app gerencianet
-		solicitacaoPagador: 'cobrança teste TrufaShop',
+		solicitacaoPagador: 'Pagamento - TrufaShop',
 	}
 
 	const charge = await createCharge(accessToken, chargeData)
