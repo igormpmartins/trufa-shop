@@ -52,11 +52,9 @@ const CartList = () => {
 			setOrderStatus('order-received')
 			setQrCode(res.data.qrcode.imagemQrcode)
 			setOrderId(res.data.orderId)
-			cart.clearCart()
-			console.log('limpou cart, ativando check order')
-			setCheckOrder(true)
 
-			console.log(res.data)
+			cart.clearCart()
+			setCheckOrder(true)
 		},
 	})
 
