@@ -106,7 +106,7 @@ const createPixCharge = async () => {
 			nome: 'Igor Martins',
 		},
 		valor: {
-			original: '0.08',
+			original: '0.07',
 		},
 		chave, //chave do app gerencianet
 		solicitacaoPagador: 'Pagamento - TrufaShop',
