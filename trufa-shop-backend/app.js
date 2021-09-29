@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
 })
 
 app.post('/create-order', async (req, res) => {
-	const pixCharge = await createPixCharge()
+	const pixCharge = await createPixCharge(req.body)
 	const { qrcode, cobranca } = pixCharge
 	const order = { ...req.body, id: cobranca.txid }
 	await saveOrder(order)

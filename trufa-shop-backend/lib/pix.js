@@ -92,24 +92,32 @@ const getLoc = async (accessToken, locId) => {
 	return result.data
 }
 
-const createPixCharge = async () => {
+const createPixCharge = async (order) => {
 	const token = await getToken()
 	const accessToken = token.access_token
 	const chave = process.env.CHAVE_PIX
+
+	const total = order.items.reduce(
+		(prev, curr) => prev + curr.qty * curr.price,
+		0
+	)
+
+	const totalQty = order.items.reduce((prev, curr) => prev + curr.qty, 0)
 
 	const chargeData = {
 		calendario: {
 			expiracao: 3600,
 		},
 		devedor: {
-			cpf: '12345678909',
-			nome: 'Igor Martins',
+			cpf: order.cpf,
+			nome: order.nome,
 		},
 		valor: {
-			original: '0.07',
+			original: total.toFixed(2),
 		},
 		chave, //chave do app gerencianet
-		solicitacaoPagador: 'Pagamento - TrufaShop',
+		solicitacaoPagador:
+			'Pagamento - TrufaShop, referente ' + totalQty + ' trufas',
 	}
 
 	const charge = await createCharge(accessToken, chargeData)

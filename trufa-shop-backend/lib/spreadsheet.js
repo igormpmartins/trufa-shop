@@ -20,7 +20,6 @@ const saveOrder = async (order) => {
 	console.log(order)
 
 	const orderId = order.id
-	//const status = 'Aguardando pagamento'
 	const status = orderStatus.AGUARDANDO_PAG
 
 	const total = order.items.reduce(
