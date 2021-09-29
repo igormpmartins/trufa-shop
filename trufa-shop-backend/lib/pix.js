@@ -106,7 +106,7 @@ const createPixCharge = async () => {
 			nome: 'Igor Martins',
 		},
 		valor: {
-			original: '1.50',
+			original: '0.10',
 		},
 		chave, //chave do app gerencianet
 		solicitacaoPagador: 'cobrança teste TrufaShop',
@@ -117,6 +117,38 @@ const createPixCharge = async () => {
 	return { qrcode, cobranca: charge }
 }
 
+const createWebHook = async () => {
+	const token = await getToken()
+	const accessToken = token.access_token
+	const chave = process.env.CHAVE_PIX
+
+	const certif = fs.readFileSync('../' + process.env.GN_CERTIFICADO)
+
+	const agent = new https.Agent({
+		pfx: certif,
+		passphrase: '',
+	})
+
+	const data = JSON.stringify({
+		webhookUrl: 'https://api-trufashop.igormpmartins.com/webhook/pix',
+	})
+
+	const config = {
+		method: 'PUT',
+		url: baseUrl + '/v2/webhook/' + chave,
+		headers: {
+			Authorization: 'Bearer ' + accessToken,
+			'Content-type': 'application/json',
+		},
+		httpsAgent: agent,
+		data,
+	}
+
+	const result = await axios(config)
+	return result.data
+}
+
 module.exports = {
 	createPixCharge,
+	createWebHook,
 }

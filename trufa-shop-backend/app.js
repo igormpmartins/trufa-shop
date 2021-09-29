@@ -22,6 +22,15 @@ app.post('/create-order', async (req, res) => {
 	res.send({ ok: 1, qrcode, cobranca })
 })
 
+app.post('/webhook/pix*', (req, res) => {
+	console.log('webhook received!')
+	console.log(req.body)
+	if (!req.client.authorized) {
+		return res.status(401).send('Invalid client certificate!')
+	}
+	res.send({ ok: true })
+})
+
 /*
 app.listen(3001, (err) => {
 	if (err) {

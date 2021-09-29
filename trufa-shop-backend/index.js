@@ -1,10 +1,11 @@
-require('dotenv').config({ path: '../.env.homologacao' })
+require('dotenv').config({ path: '../.env.producao' })
 console.log('Loading https server')
 console.log('Ambiente da api', process.env.GN_ENV)
 
 const https = require('https')
 const fs = require('fs')
 const app = require('./app')
+const { createWebHook } = require('./lib/pix')
 
 const options = {
 	//tls
@@ -20,4 +21,10 @@ const options = {
 
 //online, https
 const server = https.createServer(options, app)
-server.listen(443)
+server.listen(443, () => {
+	console.log('Production Server Online')
+	console.log('Creating webhook')
+	createWebHook().then((res) => {
+		console.log('Webhook created!', res)
+	})
+})

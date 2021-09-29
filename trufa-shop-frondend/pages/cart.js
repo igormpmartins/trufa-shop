@@ -41,7 +41,8 @@ const CartList = () => {
 			})
 			order.items = items
 
-			const url = 'http://localhost:3001/create-order'
+			//const url = 'http://localhost:3001/create-order'
+			const url = 'https://api-trufashop.igormpmartins.com:3001/create-order'
 			setOrderStatus('ordering')
 			const res = await axios.post(url, order)
 			setOrderStatus('order-received')
