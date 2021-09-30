@@ -21,9 +21,14 @@ app.get('/', (req, res) => {
 })
 
 app.post('/create-order', async (req, res) => {
-	const pixCharge = await createPixCharge(req.body)
+	const order = { ...req.body }
+	order.cpf = order.cpf.replace('.', '')
+	order.cpf = order.cpf.replace('-', '')
+
+	const pixCharge = await createPixCharge(order)
 	const { qrcode, cobranca } = pixCharge
-	const order = { ...req.body, id: cobranca.txid }
+	order.id = cobranca.txid
+
 	await saveOrder(order)
 	res.send({ ok: 1, qrcode, cobranca, orderId: cobranca.txid })
 })

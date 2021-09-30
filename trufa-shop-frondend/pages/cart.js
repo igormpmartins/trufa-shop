@@ -5,6 +5,26 @@ import { useCart } from '../components/CartContext'
 import { useFormik } from 'formik'
 import axios from 'axios'
 import { useState, useEffect } from 'react'
+import { validate as validateCPF } from 'gerador-validador-cpf'
+import * as yup from 'yup'
+
+//Reg túlio
+///\([1-9]{2,2}\) [0-9]{5-5}-[0-9]{4,4}/
+
+const schema = yup.object().shape({
+	nome: yup.string().required('Informe o nome'),
+	cpf: yup
+		.string()
+		.required('Informe o cpf')
+		.test('valida-cpf', 'CPF inválido', (value) => validateCPF(value)),
+	telefone: yup
+		.string()
+		.required('Informe o telefone')
+		.matches(
+			/\([1-9]{2,2}\) [0-9]{4,5}-[0-9]{4,4}/,
+			'Informe um telefone no formato (00) 00000-00000'
+		),
+})
 
 const CartList = () => {
 	//pre-order, ordering, order-received, order-paid
@@ -12,6 +32,9 @@ const CartList = () => {
 	const [qrCode, setQrCode] = useState('')
 	const [checkOrder, setCheckOrder] = useState(false)
 	const [orderId, setOrderId] = useState()
+
+	//validação manual
+	//const [errors, setErrors] = useState({})
 
 	const cart = useCart()
 	const cartItems = Object.keys(cart.cart)
@@ -24,13 +47,43 @@ const CartList = () => {
 		return prev + cart.cart[curr].qty * cart.cart[curr].product.data.price
 	}, 0)
 
+	/* modo roots, com useState e sem yup
+	const validate = (values) => {
+		let errors = {}
+
+		if (values.nome.length === 0) {
+			errors.nome = 'Informe o nome'
+		}
+
+		if (values.cpf.length === 0) {
+			errors.cpf = 'Informe o cpf'
+		} else {
+			if (!validateCPF(values.cpf)) {
+				errors.cpf = 'CPF inválido'
+			}
+		}
+
+		if (values.telefone.length === 0) {
+			errors.telefone = 'Informe o telefone'
+		}
+
+		return errors
+	}
+	*/
+
 	const form = useFormik({
 		initialValues: {
 			nome: '',
 			cpf: '',
 			telefone: '',
 		},
+		validationSchema: schema,
 		onSubmit: async (values) => {
+			//validação manual
+			//const val = validate(form.values)
+			//setErrors(val)
+
+			//if (Object.keys(val).length === 0) {
 			const order = { ...values }
 			const items = cartItems.map((i) => {
 				const prod = cart.cart[i].product.data
@@ -187,6 +240,11 @@ const CartList = () => {
 													className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
 												/>
 											</div>
+											{form.errors.nome && (
+												<p className='block text-red-600 p-1 m-2'>
+													{form.errors.nome}
+												</p>
+											)}
 											<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
 												<label className='w-1/4'>Seu CPF</label>
 												<input
@@ -199,6 +257,11 @@ const CartList = () => {
 													className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
 												/>
 											</div>
+											{form.errors.cpf && (
+												<p className='block text-red-600 p-1 m-2'>
+													{form.errors.cpf}
+												</p>
+											)}
 											<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
 												<label className='w-1/4'>Seu telefone</label>
 												<input
@@ -211,6 +274,11 @@ const CartList = () => {
 													className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
 												/>
 											</div>
+											{form.errors.telefone && (
+												<p className='block text-red-600 p-1 m-2'>
+													{form.errors.telefone}
+												</p>
+											)}
 											<button className='flex justify-center w-full px-10 py-3 mt-6 font-medium text-white uppercase bg-gray-800 rounded-full shadow item-center hover:bg-gray-700 focus:shadow-outline focus:outline-none'>
 												<svg
 													aria-hidden='true'

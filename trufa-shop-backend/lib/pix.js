@@ -104,6 +104,9 @@ const createPixCharge = async (order) => {
 
 	const totalQty = order.items.reduce((prev, curr) => prev + curr.qty, 0)
 
+	order.cpf = order.cpf.replace('.', '')
+	order.cpf = order.cpf.replace('-', '')
+
 	const chargeData = {
 		calendario: {
 			expiracao: 3600,

@@ -21,6 +21,8 @@ const saveOrder = async (order) => {
 
 	const orderId = order.id
 	const status = orderStatus.AGUARDANDO_PAG
+	order.cpf = order.cpf.replace('.', '')
+	order.cpf = order.cpf.replace('-', '')
 
 	const total = order.items.reduce(
 		(prev, curr) => prev + curr.qty * curr.price,
@@ -32,7 +34,7 @@ const saveOrder = async (order) => {
 			Pedido: orderId,
 			Cliente: order.nome,
 			Telefone: order.telefone,
-			CPF: order.cpf,
+			CPF: order.cpf.toString(),
 			Produto: item.name,
 			Quantidade: item.qty,
 			Preco: item.price,
