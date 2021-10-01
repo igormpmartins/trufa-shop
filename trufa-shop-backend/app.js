@@ -33,9 +33,8 @@ app.post('/create-order', async (req, res) => {
 	res.send({ ok: 1, qrcode, cobranca, orderId: cobranca.txid })
 })
 
-app.post('/check-order', async (req, res) => {
-	console.log('entrou check-order')
-	orderId = req.body.orderId
+app.get('/check-order/:orderid', async (req, res) => {
+	const orderId = req.params.orderid
 	console.log('checking order', orderId)
 	const data = await checkOrder(orderId)
 	res.send({ ...data })

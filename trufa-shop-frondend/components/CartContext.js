@@ -14,9 +14,8 @@ export const CartProvider = ({ children }) => {
 	}, [])
 
 	const clearCart = () => {
-		const newCart = {}
-		setCart(newCart)
-		window.localStorage.setItem('cart', JSON.stringify(newCart))
+		setCart({})
+		window.localStorage.removeItem('cart')
 	}
 
 	const addCart = (product) => {

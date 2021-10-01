@@ -7,9 +7,12 @@ import axios from 'axios'
 import { useState, useEffect } from 'react'
 import { validate as validateCPF } from 'gerador-validador-cpf'
 import * as yup from 'yup'
+import useSWR from 'swr'
 
 //Reg túlio
 ///\([1-9]{2,2}\) [0-9]{5-5}-[0-9]{4,4}/
+
+const fetcher = (...args) => fetch(...args).then((res) => res.json())
 
 const schema = yup.object().shape({
 	nome: yup.string().required('Informe o nome'),
@@ -27,17 +30,28 @@ const schema = yup.object().shape({
 })
 
 const CartList = () => {
-	//pre-order, ordering, order-received, order-paid
+	//pre-order, ordering, order-received
 	const [orderStatus, setOrderStatus] = useState('pre-order')
 	const [qrCode, setQrCode] = useState('')
-	const [checkOrder, setCheckOrder] = useState(false)
-	const [orderId, setOrderId] = useState()
+	const [orderId, setOrderId] = useState(null)
 
 	//validação manual
 	//const [errors, setErrors] = useState({})
 
 	const cart = useCart()
 	const cartItems = Object.keys(cart.cart)
+
+	const { data: orderData } = useSWR(
+		orderId ? process.env.NEXT_PUBLIC_API_URL + 'check-order/' + orderId : null,
+		//{ refreshInterval: 7 },
+		fetcher
+	)
+
+	useEffect(() => {
+		if (orderData && orderData.pago) {
+			cart.clearCart()
+		}
+	}, [orderData])
 
 	const totalQty = cartItems.reduce((prev, curr) => {
 		return prev + cart.cart[curr].qty
@@ -105,12 +119,10 @@ const CartList = () => {
 			setOrderStatus('order-received')
 			setQrCode(res.data.qrcode.imagemQrcode)
 			setOrderId(res.data.orderId)
-
-			cart.clearCart()
-			setCheckOrder(true)
 		},
 	})
 
+	/*
 	useEffect(async () => {
 		if (checkOrder) {
 			const timer = setInterval(async () => {
@@ -125,6 +137,7 @@ const CartList = () => {
 			}, 2000)
 		}
 	}, [checkOrder])
+	*/
 
 	const removeItem = (key) => () => {
 		cart.removeFromCart(key)
@@ -142,212 +155,221 @@ const CartList = () => {
 	return (
 		<div className='flex justify-center my-6'>
 			<div className='flex flex-col w-full p-8 text-gray-800 bg-white shadow-lg pin-r pin-y md:w-4/5 lg:w-4/5'>
-				<div className='flex-1'>
-					<table className='w-full text-sm lg:text-base' cellSpacing='0'>
-						<thead>
-							<tr className='h-12 uppercase'>
-								<th className='hidden md:table-cell'></th>
-								<th className='text-left'>Produto</th>
-								<th className='lg:text-right text-left pl-5 lg:pl-0'>
-									<span className='lg:hidden' title='Quantity'>
-										Qtd
-									</span>
-									<span className='hidden lg:inline'>Quantidade</span>
-								</th>
-								<th className='hidden text-right md:table-cell'>
-									Preço unitário
-								</th>
-								<th className='text-right'>Preço Total</th>
-							</tr>
-						</thead>
-						<tbody>
-							{Object.keys(cart.cart).map((key) => {
-								const { qty, product } = cart.cart[key]
-								const prodData = product.data
-								const totPrice = Number(qty * prodData.price)
+				{orderStatus === 'order-received' && orderData && orderData.pago && (
+					<div className='lg:px-2 lg:w-full mt-4'>
+						<p className='font-bold text-l text-black uppercase'>
+							Número do Pedido: {orderId}
+						</p>
+						<p className='mt-4'>
+							Pedido pago com sucesso! Aguarde contato da TrufaShop para a
+							entrega. Muito obrigado pela preferência.
+						</p>
+					</div>
+				)}
+				{(orderStatus !== 'order-received' ||
+					!orderData ||
+					!orderData.pago) && (
+					<div className='flex-1'>
+						<table className='w-full text-sm lg:text-base' cellSpacing='0'>
+							<thead>
+								<tr className='h-12 uppercase'>
+									<th className='hidden md:table-cell'></th>
+									<th className='text-left'>Produto</th>
+									<th className='lg:text-right text-left pl-5 lg:pl-0'>
+										<span className='lg:hidden' title='Quantity'>
+											Qtd
+										</span>
+										<span className='hidden lg:inline'>Quantidade</span>
+									</th>
+									<th className='hidden text-right md:table-cell'>
+										Preço unitário
+									</th>
+									<th className='text-right'>Preço Total</th>
+								</tr>
+							</thead>
+							<tbody>
+								{Object.keys(cart.cart).map((key) => {
+									const { qty, product } = cart.cart[key]
+									const prodData = product.data
+									const totPrice = Number(qty * prodData.price)
 
-								return (
-									<tr key={key}>
-										<td className='hidden pb-4 md:table-cell'>
-											<img
-												src={prodData.image.url}
-												className='w-20 rounded'
-												alt={prodData.name}
-											/>
-										</td>
-										<td>
-											<p className='mb-2 md:ml-4'>{prodData.name}</p>
+									return (
+										<tr key={key}>
+											<td className='hidden pb-4 md:table-cell'>
+												<img
+													src={prodData.image.url}
+													className='w-20 rounded'
+													alt={prodData.name}
+												/>
+											</td>
+											<td>
+												<p className='mb-2 md:ml-4'>{prodData.name}</p>
 
-											<button
-												type='submit'
-												className='text-gray-700 md:ml-4'
-												onClick={removeItem(key)}
-											>
-												<small>(Remover item)</small>
-											</button>
-										</td>
-										<td className='justify-center md:justify-end md:flex mt-6'>
-											<div className='w-20 h-10'>
-												<div className='relative flex flex-row w-full h-8'>
+												<button
+													type='submit'
+													className='text-gray-700 md:ml-4'
+													onClick={removeItem(key)}
+												>
+													<small>(Remover item)</small>
+												</button>
+											</td>
+											<td className='justify-center md:justify-end md:flex mt-6'>
+												<div className='w-20 h-10'>
+													<div className='relative flex flex-row w-full h-8'>
+														<input
+															type='number'
+															defaultValue={qty}
+															onBlur={changeQty(key)}
+															onChange={changeQty(key)}
+															min='1'
+															className='w-full font-semibold text-center text-gray-700 bg-gray-200 outline-none focus:outline-none hover:text-black focus:text-black'
+														/>
+													</div>
+												</div>
+											</td>
+											<td className='hidden text-right md:table-cell'>
+												<span className='text-sm lg:text-base font-medium'>
+													R$ {formatVal(prodData.price)}
+												</span>
+											</td>
+											<td className='text-right'>
+												<span className='text-sm lg:text-base font-medium'>
+													R$ {formatVal(totPrice)}
+												</span>
+											</td>
+										</tr>
+									)
+								})}
+							</tbody>
+						</table>
+						<hr className='pb-6 mt-6' />
+
+						<div className='my-4 mt-6 -mx-2 lg:flex'>
+							<div className='lg:px-2 lg:w-1/2'>
+								<div className='p-4 bg-gray-100 rounded-full'>
+									<h1 className='ml-2 font-bold uppercase'>Seus dados</h1>
+								</div>
+								<div className='p-4'>
+									<div className='justify-center'>
+										{orderStatus === 'pre-order' && (
+											<form onSubmit={form.handleSubmit}>
+												<p className='mb-4 italic'>
+													Por favor, informe seus dados para concluir o pedido
+												</p>
+												<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
+													<label className='w-1/4'>Seu nome</label>
 													<input
-														type='number'
-														defaultValue={qty}
-														onBlur={changeQty(key)}
-														onChange={changeQty(key)}
-														min='1'
-														className='w-full font-semibold text-center text-gray-700 bg-gray-200 outline-none focus:outline-none hover:text-black focus:text-black'
+														type='text'
+														name='nome'
+														id='nome'
+														placeholder='Informe seu nome'
+														value={form.values.nome}
+														onChange={form.handleChange}
+														className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
 													/>
 												</div>
-											</div>
-										</td>
-										<td className='hidden text-right md:table-cell'>
-											<span className='text-sm lg:text-base font-medium'>
-												R$ {formatVal(prodData.price)}
-											</span>
-										</td>
-										<td className='text-right'>
-											<span className='text-sm lg:text-base font-medium'>
-												R$ {formatVal(totPrice)}
-											</span>
-										</td>
-									</tr>
-								)
-							})}
-						</tbody>
-					</table>
-					<hr className='pb-6 mt-6' />
-					<div className='my-4 mt-6 -mx-2 lg:flex'>
-						<div className='lg:px-2 lg:w-1/2'>
-							<div className='p-4 bg-gray-100 rounded-full'>
-								<h1 className='ml-2 font-bold uppercase'>Seus dados</h1>
-							</div>
-							<div className='p-4'>
-								<div className='justify-center'>
-									{orderStatus === 'pre-order' && (
-										<form onSubmit={form.handleSubmit}>
-											<p className='mb-4 italic'>
-												Por favor, informe seus dados para concluir o pedido
-											</p>
-											<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
-												<label className='w-1/4'>Seu nome</label>
-												<input
-													type='text'
-													name='nome'
-													id='nome'
-													placeholder='Informe seu nome'
-													value={form.values.nome}
-													onChange={form.handleChange}
-													className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
-												/>
-											</div>
-											{form.errors.nome && (
-												<p className='block text-red-600 p-1 m-2'>
-													{form.errors.nome}
-												</p>
-											)}
-											<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
-												<label className='w-1/4'>Seu CPF</label>
-												<input
-													type='text'
-													name='cpf'
-													id='cpf'
-													placeholder='Informe seu cpf'
-													value={form.values.cpf}
-													onChange={form.handleChange}
-													className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
-												/>
-											</div>
-											{form.errors.cpf && (
-												<p className='block text-red-600 p-1 m-2'>
-													{form.errors.cpf}
-												</p>
-											)}
-											<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
-												<label className='w-1/4'>Seu telefone</label>
-												<input
-													type='text'
-													name='telefone'
-													id='telefone'
-													placeholder='Informe seu telefone'
-													value={form.values.telefone}
-													onChange={form.handleChange}
-													className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
-												/>
-											</div>
-											{form.errors.telefone && (
-												<p className='block text-red-600 p-1 m-2'>
-													{form.errors.telefone}
-												</p>
-											)}
-											<button className='flex justify-center w-full px-10 py-3 mt-6 font-medium text-white uppercase bg-gray-800 rounded-full shadow item-center hover:bg-gray-700 focus:shadow-outline focus:outline-none'>
-												<svg
-													aria-hidden='true'
-													data-prefix='far'
-													data-icon='credit-card'
-													className='w-8'
-													xmlns='http://www.w3.org/2000/svg'
-													viewBox='0 0 576 512'
-												>
-													<path
-														fill='currentColor'
-														d='M527.9 32H48.1C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48.1 48h479.8c26.6 0 48.1-21.5 48.1-48V80c0-26.5-21.5-48-48.1-48zM54.1 80h467.8c3.3 0 6 2.7 6 6v42H48.1V86c0-3.3 2.7-6 6-6zm467.8 352H54.1c-3.3 0-6-2.7-6-6V256h479.8v170c0 3.3-2.7 6-6 6zM192 332v40c0 6.6-5.4 12-12 12h-72c-6.6 0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h72c6.6 0 12 5.4 12 12zm192 0v40c0 6.6-5.4 12-12 12H236c-6.6 0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h136c6.6 0 12 5.4 12 12z'
+												{form.errors.nome && (
+													<p className='block text-red-600 p-1 m-2'>
+														{form.errors.nome}
+													</p>
+												)}
+												<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
+													<label className='w-1/4'>Seu CPF</label>
+													<input
+														type='text'
+														name='cpf'
+														id='cpf'
+														placeholder='Informe seu cpf'
+														value={form.values.cpf}
+														onChange={form.handleChange}
+														className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
 													/>
-												</svg>
-												<span className='ml-2 mt-5px'>Concluir pedido</span>
-											</button>
-										</form>
-									)}
-									{orderStatus === 'ordering' && (
-										<p>Pedido sendo efetuado, aguarde.</p>
-									)}
-									{orderStatus === 'order-received' && (
-										<div>
-											<p>
-												Pedido recebido! Efetue o pagamento com o qrCode abaixo
-												para concluir seu pedido.
-											</p>
-											<img src={qrCode}></img>
-										</div>
-									)}
-									{orderStatus === 'order-paid' && (
-										<div>
-											<p className='font-bold text-l text-black uppercase'>
-												Número do Pedido: {orderId}
-											</p>
-											<p className='mt-4'>
-												Pedido pago com sucesso! Aguarde contato da TrufaShop
-												para a entrega. Muito obrigado pela preferência.
-											</p>
-										</div>
-									)}
+												</div>
+												{form.errors.cpf && (
+													<p className='block text-red-600 p-1 m-2'>
+														{form.errors.cpf}
+													</p>
+												)}
+												<div className='flex items-center w-full h-13 pl-3 bg-white my-2'>
+													<label className='w-1/4'>Seu telefone</label>
+													<input
+														type='text'
+														name='telefone'
+														id='telefone'
+														placeholder='Informe seu telefone'
+														value={form.values.telefone}
+														onChange={form.handleChange}
+														className='w-3/4 p-4 bg-gray-100 outline-none appearance-none focus:outline-none active:outline-none border rounded-full'
+													/>
+												</div>
+												{form.errors.telefone && (
+													<p className='block text-red-600 p-1 m-2'>
+														{form.errors.telefone}
+													</p>
+												)}
+												<button className='flex justify-center w-full px-10 py-3 mt-6 font-medium text-white uppercase bg-gray-800 rounded-full shadow item-center hover:bg-gray-700 focus:shadow-outline focus:outline-none'>
+													<svg
+														aria-hidden='true'
+														data-prefix='far'
+														data-icon='credit-card'
+														className='w-8'
+														xmlns='http://www.w3.org/2000/svg'
+														viewBox='0 0 576 512'
+													>
+														<path
+															fill='currentColor'
+															d='M527.9 32H48.1C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48.1 48h479.8c26.6 0 48.1-21.5 48.1-48V80c0-26.5-21.5-48-48.1-48zM54.1 80h467.8c3.3 0 6 2.7 6 6v42H48.1V86c0-3.3 2.7-6 6-6zm467.8 352H54.1c-3.3 0-6-2.7-6-6V256h479.8v170c0 3.3-2.7 6-6 6zM192 332v40c0 6.6-5.4 12-12 12h-72c-6.6 0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h72c6.6 0 12 5.4 12 12zm192 0v40c0 6.6-5.4 12-12 12H236c-6.6 0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h136c6.6 0 12 5.4 12 12z'
+														/>
+													</svg>
+													<span className='ml-2 mt-5px'>Concluir pedido</span>
+												</button>
+											</form>
+										)}
+										{orderStatus === 'ordering' && (
+											<p>Pedido sendo efetuado, aguarde.</p>
+										)}
+										{orderStatus === 'order-received' &&
+											(!orderData || !orderData.pago) && (
+												<div>
+													<p>
+														Pedido recebido! Efetue o pagamento com o qrCode
+														abaixo para concluir seu pedido.
+													</p>
+													<img src={qrCode}></img>
+												</div>
+											)}
+									</div>
 								</div>
 							</div>
-						</div>
-						<div className='lg:px-2 lg:w-1/2'>
-							<div className='p-4 bg-gray-100 rounded-full'>
-								<h1 className='ml-2 font-bold uppercase'>Detalhes do pedido</h1>
-							</div>
-							<div className='p-4'>
-								<div className='flex justify-between border-b'>
-									<div className='lg:px-4 lg:py-2 m-2 text-lg lg:text-xl font-bold text-center text-gray-800'>
-										Quantidade
-									</div>
-									<div className='lg:px-4 lg:py-2 m-2 lg:text-lg font-bold text-center text-gray-900'>
-										{totalQty}
-									</div>
+
+							<div className='lg:px-2 lg:w-1/2'>
+								<div className='p-4 bg-gray-100 rounded-full'>
+									<h1 className='ml-2 font-bold uppercase'>
+										Detalhes do pedido
+									</h1>
 								</div>
-								<div className='flex justify-between pt-4 border-b'>
-									<div className='lg:px-4 lg:py-2 m-2 text-lg lg:text-xl font-bold text-center text-gray-800'>
-										Preço Total
+								<div className='p-4'>
+									<div className='flex justify-between border-b'>
+										<div className='lg:px-4 lg:py-2 m-2 text-lg lg:text-xl font-bold text-center text-gray-800'>
+											Quantidade
+										</div>
+										<div className='lg:px-4 lg:py-2 m-2 lg:text-lg font-bold text-center text-gray-900'>
+											{totalQty}
+										</div>
 									</div>
-									<div className='lg:px-4 lg:py-2 m-2 lg:text-lg font-bold text-center text-gray-900'>
-										R$ {formatVal(totalPrice)}
+									<div className='flex justify-between pt-4 border-b'>
+										<div className='lg:px-4 lg:py-2 m-2 text-lg lg:text-xl font-bold text-center text-gray-800'>
+											Preço Total
+										</div>
+										<div className='lg:px-4 lg:py-2 m-2 lg:text-lg font-bold text-center text-gray-900'>
+											R$ {formatVal(totalPrice)}
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				)}
 			</div>
 		</div>
 	)
